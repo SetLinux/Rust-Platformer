@@ -1,0 +1,19 @@
+[package]
+name = "training"
+version = "0.1.0"
+authors = ["Stroxat <strox@weed>"]
+edition = "2018"
+
+[dependencies]
+gl = { path = "lib/gl" }
+glfw = "0.32.0"
+specs = "0.14.0"
+specs-derive = "0.4.0"
+nalgebra = "0.18.1"
+image = "0.22.1"
+ncollide2d = "0.20.1"
+cutec2-sys = {path = "lib/cutec2-sys"}
+serde = "1.0.101"
+serde_json = "1.0.41"
+[build-dependencies]
+walkdir = "2.1"
