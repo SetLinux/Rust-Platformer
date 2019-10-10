@@ -146,7 +146,7 @@ fn main() {
                 }
             }
 
-
+            rcs.m_renderer.renderer.begin();
             rcs.m_renderer.renderer.begin();
             player_system.run_now(&world.res);
             swept_movement.run_now(&world.res);
