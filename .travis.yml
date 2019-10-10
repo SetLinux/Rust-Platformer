@@ -8,4 +8,5 @@ matrix:
     - rust: nightly
   fast_finish: true
 before_install:
-  - sudo apt-get -y install libxrandr-dev xorg-dev
+  - sudo apt-get -y install libxrandr-dev 
+  - sudo apt-get -y install xorg-dev
