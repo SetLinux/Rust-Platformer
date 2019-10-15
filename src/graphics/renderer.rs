@@ -17,7 +17,7 @@ pub struct Renderer {
     pub vbo_id: gl::types::GLuint,
     pub ebo_id: gl::types::GLuint,
     pub verticesmap: std::collections::HashMap<gl::types::GLuint, Vec<Vertex>>,
-    pub indices: [u32; 3612],
+    pub indices: [u32; 91600],
 }
 
 impl Renderer {
@@ -27,12 +27,12 @@ impl Renderer {
             ebo_id: 0,
             vbo_id: 0,
             verticesmap: std::collections::HashMap::new(),
-            indices: [0; 3612],
+            indices: [0; 91600],
         }
     }
     pub fn init(&mut self) {
         const SPRITESIZE: i32 = std::mem::size_of::<Vertex>() as i32 * 4;
-        const MAXSPRITES: i32 = 601;
+        const MAXSPRITES: i32 = 9000;
         const BUFFERSIZE: i32 = SPRITESIZE * MAXSPRITES;
         const INDICESBUFFERSIZE: usize = MAXSPRITES as usize * 6;
         println!("supposde buffer size : {:?}",INDICESBUFFERSIZE);

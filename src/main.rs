@@ -5,6 +5,7 @@ mod physics;
 mod player_system;
 mod window_manager;
 mod map_system;
+mod lines_system;
 extern crate cutec2_sys;
 extern crate nalgebra as na;
 extern crate ncollide2d;
@@ -22,7 +23,31 @@ use std::rc::Rc;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
+fn add_line_between_two_points(world : &mut specs::World,pointa : na::Vector2<f32>,pointb : na::Vector2<f32>,thickness : f32){
+    let midpoint = (pointa + pointb) / 2.0;
+    let scale = na::Matrix::magnitude(&(pointb - pointa));
+    let x_coord = pointa.x - pointb.x;
+    let y_coords = pointa.y - pointb.y;
+    let tan_value = y_coords / x_coord;
+    let rotaiton = tan_value.atan();
 
+    world
+        .create_entity()
+        .with(components::Transform {
+            position: na::Vector3::<f32>::new(midpoint.x, midpoint.y, 0.0),
+            rotation: rotaiton,
+            scale: na::Vector3::<f32>::new(scale / 2.0, thickness, 1.0),
+        })
+        .with(components::Sprite { tex_id: 0 ,coords : na::Vector4::<f32>::new(0.0,0.0,0.0,0.0)}).with(components::Collider {
+                body_handle: -1,
+                position:  (na::Vector3::<f32>::new(midpoint.x, midpoint.y, 0.0)),
+                rotation: rotaiton,
+                scale: (na::Vector3::<f32>::new(scale / 2.0, thickness, 1.0)),
+                vel: na::Vector3::<f32>::new(0.0, 0.0, 0.0),
+                slope: false,
+            }).build();
+    
+}
 
 fn main() {
     let mut world = specs::World::new();
@@ -81,6 +106,7 @@ fn main() {
     let mut rcs = graphics::render_system::RenderCommandsSystem {
         m_renderer: &mut hello_world,
     };
+    let mut linesystem = lines_system::LinesSystem{drawing : false,start_point : na::Vector2::<f32>::zeros(),end_point : na::Vector2::<f32>::zeros()};
     let physicssystem = Rc::new(RefCell::new(physics::PhysicsSystem { m_bodies: vec![] }));
     let mut swept_movement = player_system::SweptMovement {
         physicssytem: physicssystem.clone(),
@@ -111,7 +137,10 @@ fn main() {
             jump: false,
         })
         .build();
-
+        {
+      //      add_line_between_two_points(&mut world, na::Vector2::<f32>::new(100.0,200.0), na::Vector2::<f32>::new(700.0,900.0),5.0);
+    //        add_line_between_two_points(&mut world, na::Vector2::<f32>::new(100.0,200.0), na::Vector2::<f32>::new(700.0,900.0),5.0);
+        }
     world.maintain();
     physicssystem.try_borrow_mut().unwrap().run_now(&world.res);
     rcs.m_renderer.init();
@@ -145,8 +174,18 @@ fn main() {
                     player_system.movedown = true;
                 }
             }
-
-            rcs.m_renderer.renderer.begin();
+            let (x,y) = window_manager::get_mouse_position(&mut window,&rcs.m_renderer.modelview_matrix);
+            for(_,event) in glfw::flush_messages(&window.events) {
+                match event {
+                    glfw::WindowEvent::Key(glfw::Key::F,_,Action::Press,_) => {
+                        {
+                            println!("clicked on F");
+                            linesystem.updatelinesystem(&mut world, x, y, window.glwin.get_key(glfw::Key::F) == glfw::Action::Press,tex_id);
+                        }
+                    }
+                    _ => {}
+                }
+            }
             rcs.m_renderer.renderer.begin();
             player_system.run_now(&world.res);
             swept_movement.run_now(&world.res);

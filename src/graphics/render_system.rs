@@ -31,6 +31,7 @@ pub struct RenderSystem<'a> {
     pub renderer: &'a mut renderer::Renderer,
     pub render_commands: Vec<RenderCommand>,
     pub vertices_list: [renderer::Vertex; 4],
+    pub modelview_matrix : na::Matrix4<f32>
 }
 impl<'a> RenderSystem<'a> {
     pub fn init(&mut self) {
@@ -58,6 +59,15 @@ impl <'a> RenderSystem<'_>{
 impl<'a> RenderSystem<'a> {
     //X : posx , Y : posy , Z : scalex , W:scaleY ,
     pub fn new(renderer: &mut renderer::Renderer) -> RenderSystem {
+        let ortho: na::Matrix4<f32> = *nalgebra::Orthographic3::new(
+            -1.0,
+            (1000.0 - 1.0) + 1.0,
+            -1.0,
+            (1000.0 - 1.0) + 1.0,
+            -1000.0,
+            1000.0,
+        ).as_matrix();
+
         RenderSystem {
             renderer: renderer,
             render_commands: vec![],
@@ -79,26 +89,19 @@ impl<'a> RenderSystem<'a> {
                     na::Vector3::<f32>::new(1.0, 0.0, 1.0),
                 ),
             ],
+            modelview_matrix : ortho
         }
     }
     pub fn render(&mut self) {
         for rendercommand in &mut self.render_commands {
             let mut local_vertices = self.vertices_list.clone();
-            let ortho = nalgebra::Orthographic3::new(
-                -1.0,
-                (1000.0 - 1.0) + 1.0,
-                -1.0,
-                (1000.0 - 1.0) + 1.0,
-                -1000.0,
-                1000.0,
-            );
             let mut model = na::Matrix4::new_translation(&na::Vector3::<f32>::new(rendercommand.position.x.round(),rendercommand.position.y.round(),rendercommand.position.z.round()));
             model =
                 model * na::Matrix4::from_scaled_axis(&na::Vector3::z() * rendercommand.rotation);
 
             model = model.prepend_nonuniform_scaling(&(rendercommand.scale));
 
-            let modelviewprojection = ortho.as_matrix() * (model);
+            let modelviewprojection = self.modelview_matrix * (model);
             for x in 0..4 {
                 let vertexpos = self.vertices_list[x].position;
                 let transformed_vertex = modelviewprojection

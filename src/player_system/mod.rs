@@ -47,8 +47,7 @@ impl SweptMovement {
             na::Vector2::<f32>::new(vel.x, vel.y),
             &mut normal,
         );
-        if(na::Matrix::magnitude(&(vel * toi)) < 0.07f32) {
-            println!("OK ZEROID IT");
+        if(na::Matrix::magnitude(&(vel * toi)) < 0.2f32) {
             toi = 0.0;
         }
         //println!("MOVE PLAYER , :{:?} , {:?}",vel,na::Matrix::magnitude(&(vel * toi)));
@@ -69,15 +68,16 @@ impl SweptMovement {
         velocity: &na::Vector2<f32>,
         jump: bool,
         iters: i16,
+        climbs : bool 
     ) -> (na::Vector2<f32>, na::Vector2<f32>,bool) {
         let (mut point, mut toi, mut normal, geo) = self.move_player(position, scale, velocity);
-        println!("the velocity is : {:?},iters : {:?},normal : {:?},position : {:?},toi : {:?}",velocity,iters,normal,position,toi);
         if(na::Matrix::magnitude(&(point - position)) < 0.6) {
           //point = *position;
         }
+        println!("velocity is : {:?},position : {:?},iters : {:?}, normal : {:?},toi : {:?}",velocity,position,iters,normal,toi);
         let mut refvelocity = *velocity;
             let mut climbed = false;
-        if (iters < 17) {
+        if (iters < 6) {
             //here i am detecting that i am gonna reflect to a slope because then i wouldn't take the Y velocity in consideration
             //because i need to have the same speed wether i am having a downward velocity at the same time or not
             //(not realistic but makes the game feel more fluid which is all what matter )
@@ -96,13 +96,12 @@ impl SweptMovement {
             );
             //do that to avoid the shit happening when you aren't exactly on the slope
             if na::Matrix::magnitude(&normaler) > 0.1 && normaler.y >= 0.0 {
-                slope_normal = normaler;
-                //normal = normaler;
+            //    slope_normal = normaler;
+             //   normal = normaler;
             }
-
-            if slope_normal.x.abs() > 0.01 && slope_normal.x.abs() < 0.999 && toi < 1.0 && slope_normal.y > 0.0 && slope_normal.y.abs() < 0.99 {
-                   normal = na::Vector2::<f32>::new(normal.y,-normal.x);
-
+            if slope_normal.x.abs() > 0.01 && slope_normal.x.abs() < 0.999 && toi < 1.0 && slope_normal.y > 0.0 && slope_normal.y.abs() < 0.999999 {
+                   normal = na::Vector2::<f32>::new(slope_normal.y,-slope_normal.x);
+              println!("CLIMBING");
                   //calculating how much more movement is left so (1-toi) is the remaining toi assuming the max_toi is 1.0
                 let dot_product = (velocity.x ) *(1f32 - toi);
                 let (respoint, resvelocity,refclib) = self.proccess_movement(
@@ -112,15 +111,18 @@ impl SweptMovement {
                     jump,
 
                     iters + 1,
+                    true
                 );
                 climbed = true;
                 point = respoint;
                 refvelocity = resvelocity;;
-            } else if toi < 1.0 && (normal.x.abs() > 0.99 || normal.y > 0.99) {
-                println!("OK LET's REFLECT");
+            } else if toi < 1.0 && (normal.x.abs() > 0.99 || normal.y > 0.99)  {
                 let mut dot_product = 0.0;
+                
                     normal = na::Vector2::<f32>::new(normal.y,normal.x);
-
+                if(climbs) {
+                 toi = 1.0;
+                }
                 let (respoint, resvelocity,refclimb) = self.proccess_movement(
                     &point,
                     scale,
@@ -128,6 +130,7 @@ impl SweptMovement {
                     ,
                     jump,
                     iters + 1,
+                    climbs
                 );
                 point = respoint;
                 refvelocity = resvelocity;
@@ -136,19 +139,37 @@ impl SweptMovement {
             }
              else if toi < 1.0 {
                 //&& (normal.x.abs() > 0.99 || normal.y.abs() > 0.99) {
-          
-                let mut dot_product = 0.0;
-                if (velocity.y < 0.0) || (velocity.y > 0.0 && normal.y == 0.0) {
-                    dot_product = (velocity.x * normal.y + velocity.y * -normal.x) *(1f32 - toi);
-                } else {
-                    dot_product = velocity.x * normal.y * ( 1f32 - toi);
+                 let mut dot_product = 0.0;
+                //&& (normal.x.abs() > 0.99 || normal.y.abs() > 0.99) {
+                 let mut dot_product = 0.0;
+            println!("AT MAXiMUM ACCEPTABLE");
+                 let (_toier, normaler, _contact) = self.sweep_against_geo(
+                     &point,
+                     &(scale * 2.0),
+                     &na::Vector2::<f32>::new(0.0, 1.0),
+                     &t_position,
+                     &(t_scale * 2.0),
+                     t_rotation,
+                 );
+
+    
+            
+                // if(climbs) {toi = 1.0;}
+                 dot_product = (velocity.x * normal.y + velocity.y * normal.x) *(1f32 - toi);
+                 normal = na::Vector2::<f32>::new(normal.y,normal.x);
+                if(normaler.y < 0.0) {
+                normal = na::Vector2::<f32>::new(normal.x,-normal.y);
+                
                 }
+                //normal = normaler;
+           
                 let (respoint, resvelocity,refclimb) = self.proccess_movement(
                     &point,
                     scale,
-                    &na::Vector2::<f32>::new(dot_product * normal.y, dot_product * -normal.x),
+                    &((na::Matrix::dot(&normal,&(velocity*(1f32-toi))) * normal)),
                     jump,
                     iters + 1,
+                    climbs
                 );
                 point = respoint;
                 refvelocity = resvelocity;
@@ -180,6 +201,7 @@ impl<'a> System<'a> for SweptMovement {
                 &plr.vel.xy(),
                 plr.jump,
                 0,
+                false
             );
             if(climbed) {
             plr.vel = na::Vector3::<f32>::new(refvelocity.x, refvelocity.y, 0.0);
@@ -216,7 +238,7 @@ impl<'a> System<'a> for PlayerSystem {
             let (down_toi, _, _) = self.physicssystem.try_borrow_mut().unwrap().move_player(
                 tran.position.xy(),
                 tran.scale.xy(),
-                na::Vector2::<f32>::new(0.0, -0.09),
+                na::Vector2::<f32>::new(0.0, -0.19),
                 &mut normaler,
             );
             
@@ -265,7 +287,8 @@ impl<'a> System<'a> for PlayerSystem {
             //velocity -= na::Vector3::<f32>::new(0.0,8.0,0.0);
             if self.moveleft {
                 if side == 1 {
-                    let dot_product = -20.0;
+                    
+                    let dot_product =  -7.0;
                     velocity = na::Vector2::<f32>::new(
                         dot_product * slope_normal.y,
                         dot_product * -slope_normal.x,
@@ -277,9 +300,8 @@ impl<'a> System<'a> for PlayerSystem {
                 }
             }
             if self.moveright {
-                if side == -1  && slope_normal.x.abs() < 0.99 && slope_normal.y.abs() < 0.99 && na::Matrix::magnitude(&slope_normal)> 0.01{
-                    let dot_product = 20.0;
-                    println!("I AM CLIMBING : {:?}",slope_normal);
+                if side == -1{
+                    let dot_product = 7.0;
                     velocity = na::Vector2::<f32>::new(
                         dot_product * slope_normal.y,
                         dot_product * -slope_normal.x,
@@ -291,7 +313,7 @@ impl<'a> System<'a> for PlayerSystem {
                 }
             }
             if self.moveup && (down_toi < 1.0 || side != 0)&& up_toi > 0.99 {
-                println!("JUMP : {:?}",normaler);
+
                 velocity.y = 20.0;
             }
             if self.moveup {
@@ -304,6 +326,7 @@ impl<'a> System<'a> for PlayerSystem {
             self.moveright = false;
             self.moveup = false;
             self.movedown = false;
+    
             ply.vel = na::Vector3::<f32>::new(velocity.x, velocity.y, 0.0);
         }
     }

@@ -132,13 +132,14 @@ impl PhysicsSystem {
             if pos.x - t_contact.x < 0.0 {
                 let mut othernorm = na::Vector2::<f32>::new(0.0, 0.0);
                 match self.raycast(
-                    *pos + na::Vector2::<f32>::new(scale.x, -scale.y),
+                    *pos + na::Vector2::<f32>::new(scale.x - 1.0, -scale.y),
                     na::Vector2::<f32>::new(1.0, 0.0),
-                    7.0,
+                    8.0,
                 ) {
                     Some((x, y)) => (othernorm = y),
                     None => (),
                 }
+                slope_side = 1;
                 if (othernorm == rd_toi) {
                     slope_side = 1;
                 }
@@ -191,6 +192,8 @@ impl PhysicsSystem {
                 ),
             );
             if toi < min_toi {
+                    //    println!("from move player with velocity : {:?} , i got toi : {:?} , with normal : {:?}",vel,toi,normal);
+
                 min_toi = toi;
                 r_normal = normal;
                 t_position = testagainst.position.xy();
@@ -213,10 +216,10 @@ impl PhysicsSystem {
     pub fn perform_ngs(&self, pos: na::Vector2<f32>, scale: na::Vector2<f32>) -> na::Vector2<f32> {
         let max_iters = 100;
         let mut iters = 0;
-        let skin_factor: f32 = 0.02;
+        let skin_factor: f32 = 0.01;
         let mut position = pos;
 
-        let corrective_factor = 0.03;
+        let corrective_factor = 0.02;
         let mut running = true;
 
         while iters < max_iters && running {

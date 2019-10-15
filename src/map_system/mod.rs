@@ -26,7 +26,7 @@ pub fn load_map(map_file : &File , position : &na::Vector2<f32>, world : &mut sp
                 body_handle: -1,
                 position:  (na::Vector3::<f32>::new(xpos, ypos , 0.0)),
                 rotation: 0.0,
-                scale: (na::Vector3::<f32>::new(tile_width as f32 / 2.004,tile_height as f32 / 2.004, 0.0)),
+                scale: (na::Vector3::<f32>::new(tile_width as f32 / 2.005,tile_height as f32 / 2.005, 0.0)),
                 vel: na::Vector3::<f32>::new(0.0, 0.0, 0.0),
                 slope: false,
             }).build();
